@@ -34,11 +34,22 @@
     lib.mkStandaloneFlake {
       inherit self;
       name = "mawk";
+
+      # Build via the unpin-llvm engine + emit a bitcode multicall module.
+      engine = "unpin-llvm";
+      multicall = {
+        programs = [{ name = "mawk"; aliases = [ "awk" ]; }];
+      };
       smoke = [ "-W" "version" ];
       smokePattern = "mawk 1\\.3";
       build = pkgs:
         let
-          base = pkgs.pkgsStatic.mawk;
+          # The engine adds a second (module) output, which flips nixpkgs'
+          # multiple-outputs hook into per-dir-flag mode (--bindir/--docdir/…).
+          # mawk's hand-rolled configure (Dickey's, not autoconf) rejects
+          # --docdir. The module output isn't a configure dir, so suppress those
+          # flags — everything installs under $out as before.
+          base = pkgs.pkgsStatic.mawk.overrideAttrs { setOutputFlags = false; };
           # See the header note: clang/darwin fortify SIGILLs on mawk's
           # fake-flexible-array STRING without this; gcc/linux doesn't need it.
           fixed =
