@@ -52,3 +52,4 @@ The [Releases](https://github.com/unpins/mawk/releases) page has standalone bina
 - **Platforms:** Linux, macOS, Windows.
 - **Windows:** mingw cross (mawk is portable K&R C) — a self-contained PE32+ `.exe`.
 - **Man pages:** embedded in the binary, read with `unpin man mawk`.
+- **Tests:** mawk's `make check` isn't wired — every test passes except the long-lines test, which can't find its `longline.sh` helper in the build sandbox (a test-fixture path quirk, not a mawk defect). The release smoke test runs the interpreter.
