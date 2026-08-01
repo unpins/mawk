@@ -65,9 +65,8 @@
             })
             else base;
         in
-        lib.withAliases pkgs { primary = "mawk"; aliases = [ "awk" ]; } fixed;
+        fixed;
       windowsBuild = pkgs:
-        lib.withAliases pkgs { primary = "mawk.exe"; aliases = [ "awk" ]; }
-          (lib.mingwStaticCross pkgs).mawk;
+        (lib.mingwStaticCross pkgs).mawk;
     };
 }
