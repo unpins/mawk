@@ -38,7 +38,11 @@
       # Build via the unpin-llvm engine + emit a bitcode multicall module.
       engine = "unpin-llvm";
       multicall = {
-        programs = [{ name = "mawk"; aliases = [ "awk" ]; }];
+        programs = [{
+          name = "mawk";
+          # mawk installs mawk.1 only; the `awk` name is ours to provide.
+          aliases = [ { name = "awk"; noMan = true; } ];
+        }];
       };
       smoke = [ "-W" "version" ];
       smokePattern = "mawk 1\\.3";
