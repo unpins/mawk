@@ -28,6 +28,10 @@ unpin install mawk
 
 Installing also creates the `awk` command alongside `mawk`.
 
+## Man pages
+
+`mawk.1` is embedded in the binary — read it with `unpin man mawk`.
+
 ## Build locally
 
 ```bash
@@ -49,7 +53,5 @@ The [Releases](https://github.com/unpins/mawk/releases) page has standalone bina
 
 ## Build notes
 
-- **Platforms:** Linux, macOS, Windows.
-- **Windows:** mingw cross (mawk is portable K&R C) — a self-contained PE32+ `.exe`.
-- **Man pages:** embedded in the binary, read with `unpin man mawk`.
+- **Windows:** a single `mawk.exe` targeting the mingw-w64 runtime — mawk is portable K&R C, so it needs no Windows-specific work.
 - **Tests:** mawk's `make check` isn't wired — every test passes except the long-lines test, which can't find its `longline.sh` helper in the build sandbox (a test-fixture path quirk, not a mawk defect). The release smoke test runs the interpreter.
