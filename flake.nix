@@ -38,6 +38,8 @@
       # Build via the unpin-llvm engine + emit a bitcode multicall module.
       engine = "unpin-llvm";
       multicall = {
+        # The `.exe` on the engine too, not the nixpkgs mingw-gcc cross.
+        windows = true;
         programs = [{
           name = "mawk";
           # mawk installs mawk.1 only; the `awk` name is ours to provide.
@@ -70,7 +72,10 @@
             else base;
         in
         fixed;
+      # Same `setOutputFlags` note as the native build above: on the engine the
+      # windows build grows a module output too, and mawk's configure is
+      # Dickey's, not autoconf — it rejects --docdir.
       windowsBuild = pkgs:
-        (lib.mingwStaticCross pkgs).mawk;
+        (lib.mingwStaticCross pkgs).mawk.overrideAttrs { setOutputFlags = false; };
     };
 }
