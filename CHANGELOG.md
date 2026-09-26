@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [1.3.4-20240819-1] - 2026-09-26
+
 Initial release — `mawk` 1.3.4-20240819 as a single self-contained binary, built
 natively for Linux, macOS, and Windows.
 
