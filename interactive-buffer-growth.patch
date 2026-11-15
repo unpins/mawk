@@ -1,0 +1,20 @@
+With -W interactive, every input line longer than BUFFSZ grows the input
+buffer by another chunk (up to 256 KiB each time), even when the buffer
+already has room, and the space is never reused. Reading ~10000 lines of
+~10 KB each takes gigabytes: on 32-bit hosts mawk dies with "out of memory"
+(upstream's own test/longline.sh), on 64-bit it is merely wasteful. Grow only
+when the next fgets chunk would not fit. Still present in upstream's fin.c
+1.62 (20241214); upstream shrank the test instead (20240825).
+
+--- a/fin.c
++++ b/fin.c
+@@ -226,7 +226,8 @@
+ 			 */
+ 			size_t my_size = (size_t) (p - fin->buff);
+ 
+-			enlarge_fin_buffer(fin);
++			if (my_size + BUFFSZ + 1 > fin->buff_size)
++			    enlarge_fin_buffer(fin);
+ 			p = my_buff = my_size + fin->buff;
+ 			got_any = 1;
+ 		    }

@@ -52,7 +52,10 @@
           # flags — everything installs under $out as before.
           base = pkgs.pkgsStatic.mawk.overrideAttrs (o: {
             setOutputFlags = false;
-            patches = (o.patches or [ ]) ++ [ ./test-longline-path.patch ];
+            patches = (o.patches or [ ]) ++ [
+              ./test-longline-path.patch
+              ./interactive-buffer-growth.patch
+            ];
             doCheck = pkgs.stdenv.buildPlatform.canExecute pkgs.stdenv.hostPlatform;
           });
           # See the header note (darwin fortify on mawk's flexible STRING).
@@ -70,7 +73,10 @@
       windowsBuild = pkgs:
         (lib.mingwStaticCross pkgs).mawk.overrideAttrs (o: {
           setOutputFlags = false;
-          patches = (o.patches or [ ]) ++ [ ./windows-popen-pipes.patch ];
+          patches = (o.patches or [ ]) ++ [
+            ./interactive-buffer-growth.patch
+            ./windows-popen-pipes.patch
+          ];
         });
     };
 }
