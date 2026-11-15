@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- On Windows, command pipes work: `"cmd" | getline` and `print | "cmd"` stopped
+  with `pipes not supported`. The command runs through `cmd.exe`, as
+  `system()` does, and `close()` returns its exit status.
+
+### Changed
+
+- mawk's test suite now runs on every native build, so a regression fails the
+  build instead of shipping.
+
 ## [1.3.4-20240819-1] - 2026-09-26
 
 Initial release — `mawk` 1.3.4-20240819 as a single self-contained binary, built

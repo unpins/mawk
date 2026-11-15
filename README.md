@@ -9,8 +9,6 @@
 
 Part of the [unpins](https://unpins.org) catalog; install it with [`unpin`](https://github.com/unpins/unpin): `unpin install mawk`.
 
-One binary; `awk` is registered as an alias for it (mawk does not switch on the command name — the alias simply invokes the same binary, which *is* an awk).
-
 ## Usage
 
 Run the `mawk` program with [unpin](https://github.com/unpins/unpin):
@@ -30,7 +28,13 @@ Installing also creates the `awk` command alongside `mawk`.
 
 ## Man pages
 
-`mawk.1` is embedded in the binary — read it with `unpin man mawk`.
+`mawk.1` and the two technical notes on its internals, `mawk-arrays.7` and `mawk-code.7`, are embedded in the binary:
+
+```bash
+unpin man mawk
+unpin man mawk mawk-arrays
+unpin man mawk mawk-code
+```
 
 ## Build locally
 
@@ -53,5 +57,5 @@ The [Releases](https://github.com/unpins/mawk/releases) page has standalone bina
 
 ## Build notes
 
-- **Windows:** a single `mawk.exe` targeting the mingw-w64 runtime — mawk is portable K&R C, so it needs no Windows-specific work.
-- **Tests:** mawk's `make check` isn't wired — every test passes except the long-lines test, which can't find its `longline.sh` helper in the build sandbox (a test-fixture path quirk, not a mawk defect). The release smoke test runs the interpreter.
+- **Windows:** a single `mawk.exe` targeting the mingw-w64 runtime. Command pipes (`cmd | getline`, `print | "cmd"`) run the command through `cmd.exe`, as `system()` does.
+- **Tests:** mawk's test suite runs on native builds (0 failures under static-musl) and is skipped on cross targets the build host can't execute.

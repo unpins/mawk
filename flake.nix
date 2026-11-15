@@ -8,26 +8,21 @@
 
   inputs.unpins-lib.url = "github:unpins/nix-lib";
 
-  # mawk is Debian/Ubuntu's `/usr/bin/awk`. Single binary; `awk` is registered
-  # as an UNPIN_META alias (mawk doesn't switch on argv[0] — the alias just
-  # invokes the same binary, which IS awk). Native from pkgsStatic.mawk;
-  # Windows through mingw (mawk is portable K&R C).
+  # mawk is Debian/Ubuntu's `/usr/bin/awk`. Single binary; `awk` is an alias
+  # of it. Native from pkgsStatic.mawk; Windows through mingw, with
+  # windows-popen-pipes.patch for command pipes (mawk only has them via fork).
+  # Both compile with the engine's clang.
   #
-  # macOS: ships now. Earlier the darwin binary SIGILLed at startup, even on
-  # `{print 6*7}` — root-caused (crash report: __strcpy_chk → __chk_fail_overflow
-  # in new_STRING ← field_init) to a fortify false positive. mawk's STRING ends
-  # in a fixed-size trailing array `char str[2]` used as a flexible array member
-  # (types.h); every string is `zmalloc(len + STRING_OH)` and copied in with
-  # `strcpy(sval->str, s)`. clang on darwin, unlike gcc on linux, treats `[2]`
-  # as a real fixed array under its default -fstrict-flex-arrays level, so
-  # _FORTIFY_SOURCE computes __builtin_object_size(sval->str, 1) == 2 and
-  # __strcpy_chk aborts the first default string copied in field_init
-  # (CONVFMT "%.6g" → 5 bytes > 2), even though the allocation reserved room.
-  # -fstrict-flex-arrays=0 restores the trailing-array-is-flexible semantics
-  # mawk's code assumes (object size becomes unknown → the check passes), while
-  # keeping every other fortify check intact — unlike a blanket
-  # -D_FORTIFY_SOURCE=0. gcc/linux already treats it as flexible, so the flag is
-  # darwin-only and the linux/mingw builds are untouched.
+  # macOS: the darwin binary once SIGILLed at startup, even on `{print 6*7}`
+  # (crash report: __strcpy_chk → __chk_fail_overflow in new_STRING ←
+  # field_init). mawk's STRING ends in `char str[2]` used as a flexible array
+  # member (types.h), sized by `zmalloc(len + STRING_OH)` and filled with
+  # strcpy; with strict flex-array semantics _FORTIFY_SOURCE sees an object of
+  # size 2 and aborts on the first default string. -fstrict-flex-arrays=0
+  # restores the semantics mawk assumes and keeps every other fortify check.
+  # The strict level most likely came from nixpkgs' `strictflexarrays1`
+  # hardening, which the engine now leaves off; whether the flag is still
+  # needed waits for a run on the Mac.
   outputs = { self, unpins-lib }:
     let lib = unpins-lib.lib;
     in
@@ -42,7 +37,7 @@
         windows = true;
         programs = [{
           name = "mawk";
-          # mawk installs mawk.1 only; the `awk` name is ours to provide.
+          # upstream has no page named awk.
           aliases = [ { name = "awk"; noMan = true; } ];
         }];
       };
@@ -60,8 +55,7 @@
             patches = (o.patches or [ ]) ++ [ ./test-longline-path.patch ];
             doCheck = pkgs.stdenv.buildPlatform.canExecute pkgs.stdenv.hostPlatform;
           });
-          # See the header note: clang/darwin fortify SIGILLs on mawk's
-          # fake-flexible-array STRING without this; gcc/linux doesn't need it.
+          # See the header note (darwin fortify on mawk's flexible STRING).
           fixed =
             if pkgs.stdenv.hostPlatform.isDarwin
             then base.overrideAttrs (o: {
