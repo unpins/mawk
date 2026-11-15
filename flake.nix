@@ -74,6 +74,9 @@
       # windows build grows a module output too, and mawk's configure is
       # Dickey's, not autoconf — it rejects --docdir.
       windowsBuild = pkgs:
-        (lib.mingwStaticCross pkgs).mawk.overrideAttrs { setOutputFlags = false; };
+        (lib.mingwStaticCross pkgs).mawk.overrideAttrs (o: {
+          setOutputFlags = false;
+          patches = (o.patches or [ ]) ++ [ ./windows-popen-pipes.patch ];
+        });
     };
 }

@@ -1,0 +1,132 @@
+Windows has no fork(), so configure leaves HAVE_REAL_PIPES off and every
+`cmd | getline` or `print | "cmd"` stops with "pipes not supported" (only
+system() works). Run pipe commands with _popen()/_pclose() there, through
+cmd.exe like system().
+
+--- a/files.c
++++ b/files.c
+@@ -54,6 +54,9 @@
+ #ifdef  HAVE_FAKE_PIPES
+     int inpipe_exit;
+ #endif
++#ifdef  _WIN32
++    FILE *popen_fp;		/* _popen() stream behind a PIPE_IN */
++#endif
+ 
+     PTR ptr;			/* FIN*   or  FILE*   */
+ } FILE_NODE;
+@@ -172,6 +175,13 @@
+ 		    else
+ 			input_failed(name, p);
+ 		}
++#elif defined(_WIN32)
++		if (!(p->ptr = win32_get_pipe(name, type, &p->popen_fp))) {
++		    if (type == PIPE_OUT)
++			output_failed(name);
++		    else
++			input_failed(name, p);
++		}
+ #else
+ 		rt_error("pipes not supported");
+ #endif
+@@ -252,6 +262,10 @@
+ 		break;
+ 
+ 	    case PIPE_OUT:
++#if defined(_WIN32) && !defined(HAVE_REAL_PIPES) && !defined(HAVE_FAKE_PIPES)
++		retval = _pclose((FILE *) p->ptr);
++		break;
++#endif
+ 		if (fclose((FILE *) p->ptr) != 0) {
+ 		    close_error(p);
+ 		}
+@@ -270,6 +284,9 @@
+ 
+ 	    case PIPE_IN:
+ 		FINclose((FIN *) p->ptr);
++#if defined(_WIN32) && !defined(HAVE_REAL_PIPES) && !defined(HAVE_FAKE_PIPES)
++		retval = _pclose(p->popen_fp);
++#endif
+ 
+ #ifdef  HAVE_REAL_PIPES
+ 		retval = wait_for(p->pid);
+@@ -427,6 +444,56 @@
+ #endif /* HAVE_FAKE_PIPES */
+ #endif /* ! HAVE_REAL_PIPES */
+ 
++#if defined(_WIN32) && !defined(HAVE_REAL_PIPES) && !defined(HAVE_FAKE_PIPES)
++/*
++ * Windows has no fork(); _popen() runs the command through cmd.exe, as
++ * system() does.  An input pipe reads through a dup of the stream's fd, so
++ * FINclose() and _pclose() each close their own descriptor and _pclose()
++ * can still wait for the command.
++ */
++PTR
++win32_get_pipe(char *name, int type, FILE **fpp)
++{
++    FILE *fp;
++    int fd;
++
++    fflush(stdout);
++    fflush(stderr);
++    if (type == PIPE_OUT) {
++	fp = _popen(name, BinMode2("wb", "w"));
++	*fpp = fp;
++	return (PTR) fp;
++    }
++#if USE_BINMODE
++    fp = _popen(name, (binmode() & 1) ? "rb" : "r");
++#else
++    fp = _popen(name, "r");
++#endif
++    if (!fp)
++	return (PTR) 0;
++    if ((fd = _dup(fileno(fp))) == -1) {
++	_pclose(fp);
++	return (PTR) 0;
++    }
++    *fpp = fp;
++    return (PTR) FINdopen(fd, 0);
++}
++
++/* at exit: let every output pipe's command finish */
++void
++close_out_pipes(void)
++{
++    FILE_NODE *p;
++
++    for (p = file_list; p; p = p->link) {
++	if (p->type == PIPE_OUT)
++	    _pclose((FILE *) p->ptr);
++	else if (IS_OUTPUT(p->type))
++	    fflush((FILE *) p->ptr);
++    }
++}
++#endif
++
+ /* hardwire to /bin/sh for portability of programs */
+ const char *shell = "/bin/sh";
+ 
+--- a/files.h
++++ b/files.h
+@@ -35,6 +35,9 @@
+ extern int file_flush(STRING *);
+ extern int flush_all_output(void);
+ extern PTR get_pipe(char *, int, int *);
++#if defined(_WIN32) && !defined(HAVE_REAL_PIPES) && !defined(HAVE_FAKE_PIPES)
++extern PTR win32_get_pipe(char *, int, FILE **);
++#endif
+ extern int wait_for(int);
+ extern int wait_status(int);
+ extern void close_out_pipes(void);
+--- a/main.c
++++ b/main.c
+@@ -81,6 +81,8 @@
+ #else
+ #ifdef  HAVE_FAKE_PIPES
+     close_fake_pipes();
++#elif defined(_WIN32)
++    close_out_pipes();
+ #endif
+ #endif
+ 
