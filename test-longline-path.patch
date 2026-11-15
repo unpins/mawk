@@ -1,0 +1,14 @@
+test/mawktest runs its long-lines helper as `longline.sh`, found only when
+the test directory is on PATH (it is not in the build sandbox).
+
+--- a/test/mawktest
++++ b/test/mawktest
+@@ -269,7 +269,7 @@
+ Begin "long-lines test"
+ if [ -f /proc/meminfo ]
+ then
+-	AWK=$PROG longline.sh | cmp -s - longline.out || Fail "longline.awk"
++	AWK=$PROG ./longline.sh | cmp -s - longline.out || Fail "longline.awk"
+ else
+ 	echo "SKIPPED because of memory requirements"
+ fi
