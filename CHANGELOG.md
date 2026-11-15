@@ -7,6 +7,10 @@
 - On Windows, command pipes work: `"cmd" | getline` and `print | "cmd"` stopped
   with `pipes not supported`. The command runs through `cmd.exe`, as
   `system()` does, and `close()` returns its exit status.
+- With `-W interactive`, every input line longer than 4 KB grew mawk's memory
+  by up to 256 KB that was never reused. Ten thousand such lines took
+  gigabytes, and on 32-bit Linux (i686, armv7l) mawk stopped with
+  `out of memory`.
 
 ### Changed
 
